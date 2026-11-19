@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Plataforma educativa interativa sobre HCI, UX, Acessibilidade Digital, Manipulação do DOM e Direitos Digitais.">
+    <title>ConectaCidadão — Acessibilidade, UX e Direitos Digitais</title>
+
+    <!-- Fontes legíveis (Inter e Atkinson Hyperlegible, projetada para baixa visão/dislexia) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- =========================================================================
+         ESTILOS CSS PUROS — FOCO EM ACESSIBILIDADE (WCAG), UX E RESPONSIVIDADE
+         Inclui variáveis de tema, modo alto contraste, ajuste dinâmico de fonte,
+         espaçamento para leitura e indicadores claros de foco (:focus-visible).
+    ========================================================================== -->
+    <style>
+        :root {
+            /* Paleta Azul Profundo, Ciano e Âmbar com contraste AAA/AA */
+            --bg-principal: #071324;
+            --bg-superficie: #0f213a;
+            --bg-superficie-alt: #162e4f;
+            --borda-sutil: #264673;
+            --texto-principal: #f8fafc;
+            --texto-secundario: #cbd5e1;
+            --cor-ciano: #22d3ee;
+            --cor-ciano-escuro: #0891b2;
+            --cor-ambar: #fbbf24;
+            --cor-ambar-texto: #090d16;
+            --cor-sucesso: #34d399;
+            --cor-erro: #f87171;
+            --cor-foco: #fbbf24;
+
+            /* Variáveis manipuladas dinamicamente via JavaScript (DOM) */
+            --escala-fonte: 100%;
+            --espacamento-letras: normal;
+            --altura-linha: 1.6;
+            --fonte-atual: 'Inter', system-ui, -apple-system, sans-serif;
+            --raio-borda: 14px;
+            --sombra-card: 0 12px 28px -6px rgba(0, 0, 0, 0.45);
+        }
+
+        /* -------------------------------------------------------------------------
+           MODO ALTO CONTRASTE (Ativado pelo botão na Barra de Acessibilidade)
+        -------------------------------------------------------------------------- */
+        body.modo-alto-contraste {
+            --bg-principal: #000000;
+            --bg-superficie: #0a0a0a;
+            --bg-superficie-alt: #141414;
+            --borda-sutil: #ffffff;
+            --texto-principal: #ffffff;
+            --texto-secundario: #ffff00;
+            --cor-ciano: #00ffff;
+            --cor-ciano-escuro: #00cccc;
+            --cor-ambar: #ffff00;
+            --cor-ambar-texto: #000000;
+            --cor-sucesso: #00ff66;
+            --cor-erro: #ff4444;
+            --cor-foco: #00ffff;
+            --sombra-card: none;
+        }
+
+        /* -------------------------------------------------------------------------
+           MODO LEITURA / DISLEXIA (Aumenta espaçamento e ativa fonte Atkinson)
+        -------------------------------------------------------------------------- */
+        body.modo-leitura {
+            --espacamento-letras: 0.06em;
+            --altura-linha: 1.95;
+            --fonte-atual: 'Atkinson Hyperlegible', 'Inter', sans-serif;
+        }
+
+        /* -------------------------------------------------------------------------
+           DESTACAR LINKS E BOTÕES (Facilita identificação de áreas clicáveis)
+        -------------------------------------------------------------------------- */
+        body.destacar-interativos a,
+        body.destacar-interativos button,
+        body.destacar-interativos input,
+        body.destacar-interativos select,
+        body.destacar-interativos textarea {
+            outline: 2px dashed var(--cor-ambar) !important;
+            outline-offset: 3px !important;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: var(--escala-fonte);
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--fonte-atual);
+            background-color: var(--bg-principal);
+            color: var(--texto-principal);
+            letter-spacing: var(--espacamento-letras);
+            line-height: var(--altura-linha);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* Indicador de foco altamente visível para navegação por teclado (Tab) */
+        :focus-visible {
+            outline: 3px solid var(--cor-foco);
+            outline-offset: 3px;
+            border-radius: 6px;
+        }
+
+        /* Link de Pular para o Conteúdo Principal (Skip Link - Acessibilidade) */
+        .skip-link {
+            position: absolute;
+            top: -120px;
+            left: 1rem;
+            background-color: var(--cor-ambar);
+            color: var(--cor-ambar-texto);
+            font-weight: 800;
+            padding: 0.85rem 1.25rem;
+            border-radius: 0.75rem;
+            z-index: 9999;
+            text-decoration: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            transition: top 0.2s ease;
+        }
+
+        .skip-link:focus {
+            top: 1rem;
+        }
+
+        /* Classe utilitária para leitores de tela */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 1.25rem;
+        }
+
+        /* -------------------------------------------------------------------------
+           1. BARRA DE FERRAMENTAS DE ACESSIBILIDADE (TOPO)
+        -------------------------------------------------------------------------- */
+        .barra-acessibilidade {
+            background-color: var(--bg-superficie-alt);
+            border-bottom: 1px solid var(--borda-sutil);
+            padding: 0.6rem 0;
+            font-size: 0.875rem;
+        }
+
+        .barra-acessibilidade-inner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .acessibilidade-grupo {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-acess {
+            background-color: var(--bg-superficie);
+            color: var(--texto-principal);
+            border: 1px solid var(--borda-sutil);
+            padding: 0.45rem 0.8rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-height: 38px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-acess:hover {
+            border-color: var(--cor-ciano);
+            background-color: var(--bg-principal);
+        }
+
+        .btn-acess[aria-pressed="true"] {
+            background-color: var(--cor-ambar);
+            color: var(--cor-ambar-texto);
+            border-color: var(--cor-ambar);
+            font-weight: 800;
+        }
+
+        /* -------------------------------------------------------------------------
+           2. CABEÇALHO E NAVEGAÇÃO SEMÂNTICA
+        -------------------------------------------------------------------------- */
+        .cabecalho-principal {
+            background-color: rgba(15, 33, 58, 0.92);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--borda-sutil);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        body.modo-alto-contraste .cabecalho-principal {
+            background-color: #000000;
+        }
+
+        .cabecalho-inner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+
+        .marca {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--texto-principal);
+        }
+
+        .marca-icone {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--cor-ciano), var(--cor-ciano-escuro));
+            color: #04101d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--texto-secundario);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.45rem 0.65rem;
+            border-radius: 8px;
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--cor-ciano);
+            background-color: rgba(34, 211, 238, 0.1);
+        }
+
+        .btn-ajuda-header {
+            background-color: var(--cor-ambar);
+            color: var(--cor-ambar-texto);
+            border: none;
+            padding: 0.6rem 1.1rem;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            min-height: 44px;
+            transition: transform 0.15s ease, filter 0.2s ease;
+        }
+
+        .btn-ajuda-header:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
+
+        /* -------------------------------------------------------------------------
+           3. HERO / APRESENTAÇÃO
+        -------------------------------------------------------------------------- */
+        .hero {
+            padding: 3rem 0 2.5rem;
+            border-bottom: 1px solid var(--borda-sutil);
+            background: radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 55%);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.3fr 0.9fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        @media (max-width: 860px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .badge-unidade {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: rgba(34, 211, 238, 0.14);
+            color: var(--cor-ciano);
+            border: 1px solid rgba(34, 211, 238, 0.35);
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(1.85rem, 3.6vw, 2.75rem);
+            line-height: 1.2;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 span {
+            color: var(--cor-ciano);
+        }
+
+        .hero p {
+            color: var(--texto-secundario);
+            font-size: 1.05rem;
+            margin-bottom: 1.5rem;
+            max-width: 62ch;
+        }
+
+        .hero-acoes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.85rem;
+        }
+
+        .btn-primario {
+            background-color: var(--cor-ciano);
+            color: #04101d;
+            border: none;
+            padding: 0.8rem 1.35rem;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.95rem;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 46px;
+        }
+
+        .btn-primario:hover {
+            filter: brightness(1.08);
+        }
+
+        .btn-secundario {
+            background-color: var(--bg-superficie);
+            color: var(--texto-principal);
+            border: 1px solid var(--borda-sutil);
+            padding: 0.8rem 1.35rem;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 46px;
+        }
+
+        .btn-secundario:hover {
+            border-color: var(--cor-ciano);
+        }
+
+        .card-resumo-ux {
+            background-color: var(--bg-superficie);
+            border: 1px solid var(--borda-sutil);
+            border-radius: var(--raio-borda);
+            padding: 1.5rem;
+            box-shadow: var(--sombra-card);
+        }
+
+        .card-resumo-ux h2 {
+            font-size: 1.1rem;
+            color: var(--cor-ambar);
+            margin-bottom: 0.85rem;
+        }
+
+        .lista-pilares {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            font-size: 0.92rem;
+        }
+
+        .lista-pilares li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            color: var(--texto-secundario);
+        }
+
+        .lista-pilares strong {
+            color: var(--texto-principal);
+        }
+
+        /* -------------------------------------------------------------------------
+           SEÇÕES GERAIS
+        -------------------------------------------------------------------------- */
+        .secao {
+            padding: 3.25rem 0;
+            border-bottom: 1px solid var(--borda-sutil);
+        }
+
+        .secao-cabecalho {
+            margin-bottom: 2rem;
+        }
+
+        .secao-cabecalho h2 {
+            font-size: clamp(1.45rem, 2.6vw, 2rem);
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .secao-cabecalho p {
+            color: var(--texto-secundario);
+            max-width: 68ch;
+        }
+
+        /* -------------------------------------------------------------------------
+           4. SIMULADOR COMPARADOR DE INTERFACES (HCI & UX)
+        -------------------------------------------------------------------------- */
+        .comparador-controles {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background-color: var(--bg-superficie);
+            border: 1px solid var(--borda-sutil);
+            padding: 1rem 1.25rem;
+            border-radius: var(--raio-borda);
+            margin-bottom: 1.5rem;
+        }
+
+        .switch-grupo {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .btn-modo-ui {
+            padding: 0.65rem 1.15rem;
+            border-radius: 10px;
+            border: 1px solid var(--borda-sutil);
+            background-color: var(--bg-principal);
+            color: var(--texto-secundario);
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            min-height: 44px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-modo-ui.ativo-ruim {
+            background-color: rgba(248, 113, 113, 0.18);
+            color: var(--cor-erro);
+            border-color: var(--cor-erro);
+        }
+
+        .btn-modo-ui.ativo-bom {
+            background-color: rgba(52, 211, 153, 0.18);
+            color: var(--cor-sucesso);
+            border-color: var(--cor-sucesso);
+        }
+
+        .comparador-layout {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        @media (max-width: 860px) {
+            .comparador-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Palco da Interface Simulada */
+        .palco-simulacao {
+            border-radius: var(--raio-borda);
+            padding: 1.75rem;
+            border: 2px solid var(--borda-sutil);
+            transition: all 0.3s ease;
+        }
+
+        /* Estilo propositalmente problemático (HCI ruim) para demonstração didática */
+        .palco-simulacao.interface-ruim {
+            background-color: #d4d4d8;
+            color: #a1a1aa; /* Contraste péssimo proposital */
+            border-color: #a1a1aa;
+            font-size: 0.78rem;
+            line-height: 1.25;
+        }
+
+        .palco-simulacao.interface-ruim .sim-titulo {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            font-weight: 400;
+            margin-bottom: 0.4rem;
+        }
+
+        .palco-simulacao.interface-ruim .sim-input {
+            background-color: #e4e4e7;
+            border: 1px solid #d4d4d8;
+            color: #a1a1aa;
+            padding: 3px 5px;
+            font-size: 11px;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .palco-simulacao.interface-ruim .sim-btn {
+            background-color: #c4c4cc;
+            color: #9ca3af;
+            border: none;
+            padding: 3px 7px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        /* Estilo inclusivo e acessível (Boas Práticas WCAG & UX) */
+        .palco-simulacao.interface-boa {
+            background-color: var(--bg-superficie);
+            color: var(--texto-principal);
+            border-color: var(--cor-sucesso);
+            box-shadow: var(--sombra-card);
+        }
+
+        .palco-simulacao.interface-boa .sim-titulo {
+            font-size: 1.3rem;
+            color: var(--texto-principal);
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .palco-simulacao.interface-boa label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            color: var(--texto-principal);
+        }
+
+        .palco-simulacao.interface-boa .sim-input {
+            background-color: var(--bg-principal);
+            border: 2px solid var(--borda-sutil);
+            color: var(--texto-principal);
+            padding: 0.75rem 0.9rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            width: 100%;
+            margin-bottom: 0.85rem;
+        }
+
+        .palco-simulacao.interface-boa .sim-btn {
+            background-color: var(--cor-sucesso);
+            color: #03150e;
+            border: none;
+            padding: 0.8rem 1.25rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            min-height: 46px;
+            cursor: pointer;
+        }
+
+        .diagnostico-ux {
+            background-color: var(--bg-superficie);
+            border: 1px solid var(--borda-sutil);
+            border-radius: var(--raio-borda);
+            padding: 1.5rem;
+        }
+
+        .diagnostico-lista {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .diagnostico-lista li {
+            padding: 0.75rem;
+            border-radius: 10px;
+            background-color: var(--bg-principal);
+            border-left: 4px solid var(--cor-ciano);
+            font-size: 0.9rem;
+        }
+
+        .diagnostico-lista li.alerta-erro {
+            border-left-color: var(--cor-erro);
+        }
+
+        .diagnostico-lista li.alerta-ok {
+            border-left-color: var(--cor-sucesso);
+        }
+
+        /* -------------------------------------------------------------------------
+           5. LABORATÓRIO DE DIREITOS DIGITAIS E INCLUSÃO SOCIAL (DOM DINÂMICO)
+        -------------------------------------------------------------------------- */
+        .ferramentas-direitos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .campo-busca-wrap {
+            flex: 1 1 280px;
+            position: relative;
+        }
+
+        .campo-busca {
+            width: 100%;
+            background-color: var(--bg-superficie);
+            border: 2px solid var(--borda-sutil);
+            color: var(--texto-principal);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            min-height: 46px;
+        }
+
+        .campo-busca:focus {
+            border-color: var(--cor-ciano);
+        }
+
+        .filtros-categoria {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .btn-cat {
+            background-color: var(--bg-superficie);
+            color: var(--texto-secundario);
+            border: 1px solid var(--borda-sutil);
+            padding: 0.6rem 0.95rem;
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 42px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cat:hover {
+            border-color: var(--cor-ciano);
+            color: var(--texto-principal);
+        }
+
+        .btn-cat.ativo {
+            background-color: var(--cor-ciano);
+            color: #04101d;
+            border-color: var(--cor-ciano);
+        }
+
+        .status-resultados {
+            font-size: 0.9rem;
+            color: var(--texto-secundario);
+            margin-bottom: 1.25rem;
+            font-weight: 600;
+        }
+
+        .grade-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .card-direito {
+            background-color: var(--bg-superficie);
+            border: 1px solid var(--borda-sutil);
+            border-radius: var(--raio-borda);
+            padding: 1.4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1rem;
+            box-shadow: var(--sombra-card);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card-direito:hover {
+            transform: translateY(-3px);
+            border-color: var(--cor-ciano);
+        }
+
+        .tag-categoria {
+            display: inline-block;
+            align-self: flex-start;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            background-color: rgba(34, 211, 238, 0.14);
+            color: var(--cor-ciano);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        .tag-comunidade {
+            background-color: rgba(251, 191, 36, 0.16);
+            color: var(--cor-ambar);
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+
+        .card-direito h3 {
+            font-size: 1.12rem;
+            font-weight: 800;
+            margin-top: 0.6rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .card-direito p {
+            color: var(--texto-secundario);
+            font-size: 0.92rem;
+        }
+
+        .card-rodape {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid var(--borda-sutil);
+        }
+
+        .btn-apoiar {
+            background-color: var(--bg-principal);
+            color: var(--texto-principal);
+            border: 1px solid var(--borda-sutil);
+            padding: 0.45rem 0.8rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-apoiar[aria-pressed="true"] {
+            border-color: var(--cor-ambar);
+            color: var(--cor-ambar);
+        }
+
+        .btn-ouvir-card {
+            background: transparent;
+            color: var(--cor-ciano);
+            border: 1px solid transparent;
+            padding: 0.45rem 0.65rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 38px;
+        }
+
+        .btn-ouvir-card:hover {
+            border-color: var(--cor-ciano);
+        }
+
+        /* Formulário de Criação Dinâmica no DOM */
+        .box-formulario {
+            background-color: var(--bg-superficie);
+            border: 1px solid var(--borda-sutil);
+            border-radius: var(--raio-borda);
+            padding: 1.75rem;
+            box-shadow: var(--sombra-card);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-top: 1.25rem;
+        }
+
+        .campo-grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .campo-grupo.largura-total {
+            grid-column: 1 / -1;
+        }
+
+        .campo-grupo label {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .campo-grupo input,
+        .campo-grupo select,
+        .campo-grupo textarea {
+            background-color: var(--bg-principal);
+            border: 2px solid var(--borda-sutil);
+            color: var(--texto-principal);
+            padding: 0.75rem 0.9rem;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        .feedback-form {
+            margin-top: 1rem;
+            font-weight: 700;
+            font-size: 0.92rem;
+            min-height: 1.4rem;
+        }
+
+        /* -------------------------------------------------------------------------
+           6. BOTÃO FLUTUANTE E MODAL DE AJUDA ACESSÍVEL (Aula: Criando um modal de ajuda)
+        -------------------------------------------------------------------------- */
+        .btn-ajuda-flutuante {
+            position: fixed;
+            bottom: 1.35rem;
+            right: 1.35rem;
+            background-color: var(--cor-ambar);
+            color: var(--cor-ambar-texto);
+            border: 2px solid #090d16;
+            padding: 0.85rem 1.2rem;
+            border-radius: 999px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
+            z-index: 45;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 50px;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-ajuda-flutuante:hover {
+            transform: scale(1.04);
+        }
+
+        /* Backdrop e Janela Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(3, 9, 20, 0.82);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 100;
+        }
+
+        .modal-backdrop.aberto {
+            display: flex;
+        }
+
+        .modal-caixa {
+            background-color: var(--bg-superficie);
+            color: var(--texto-principal);
+            border: 2px solid var(--cor-ciano);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 640px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1.75rem;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7);
+            position: relative;
+        }
+
+        .modal-topo {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--borda-sutil);
+        }
+
+        .btn-fechar-modal {
+            background-color: var(--bg-principal);
+            color: var(--texto-principal);
+            border: 1px solid var(--borda-sutil);
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .btn-fechar-modal:hover {
+            border-color: var(--cor-erro);
+            color: var(--cor-erro);
+        }
+
+        .modal-abas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1.15rem 0;
+        }
+
+        .btn-aba-modal {
+            background-color: var(--bg-principal);
+            color: var(--texto-secundario);
+            border: 1px solid var(--borda-sutil);
+            padding: 0.55rem 0.95rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            min-height: 40px;
+        }
+
+        .btn-aba-modal[aria-selected="true"] {
+            background-color: var(--cor-ciano);
+            color: #04101d;
+            border-color: var(--cor-ciano);
+        }
+
+        .painel-aba {
+            display: none;
+        }
+
+        .painel-aba.ativo {
+            display: block;
+        }
+
+        .lista-atalhos {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-top: 0.75rem;
+        }
+
+        .lista-atalhos li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            background-color: var(--bg-principal);
+            padding: 0.65rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        kbd {
+            background-color: var(--bg-superficie-alt);
+            border: 1px solid var(--borda-sutil);
+            border-radius: 6px;
+            padding: 0.2rem 0.5rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--cor-ambar);
+        }
+
+        .rodape {
+            margin-top: auto;
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--texto-secundario);
+            font-size: 0.88rem;
+            background-color: var(--bg-superficie);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- =========================================================================
+         LINK DE SALTO (SKIP LINK) — Essencial para navegação por teclado e leitores de tela
+    ========================================================================== -->
+    <a href="#conteudo-principal" class="skip-link">Pular para o conteúdo principal</a>
+
+    <!-- Região ARIA Live para anunciar mudanças dinâmicas para leitores de tela -->
+    <div id="anunciador-aria" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- =========================================================================
+         BARRA DE FERRAMENTAS DE ACESSIBILIDADE (Manipulação do DOM em tempo real)
+    ========================================================================== -->
+    <aside class="barra-acessibilidade" aria-label="Ferramentas de acessibilidade">
+        <div class="container barra-acessibilidade-inner">
+            <div class="acessibilidade-grupo">
+                <span style="font-weight: 700; color: var(--cor-ciano);">Acessibilidade:</span>
+                <button type="button" class="btn-acess" id="btn-diminuir-fonte" aria-label="Diminuir tamanho da fonte">
+                    A-
+                </button>
+                <button type="button" class="btn-acess" id="btn-resetar-fonte" aria-label="Restaurar tamanho padrão da fonte">
+                    A (100%)
+                </button>
+                <button type="button" class="btn-acess" id="btn-aumentar-fonte" aria-label="Aumentar tamanho da fonte">
+                    A+
+                </button>
+            </div>
+
+            <div class="acessibilidade-grupo">
+                <button type="button" class="btn-acess" id="btn-alto-contraste" aria-pressed="false">
+                    ◐ Alto Contraste
+                </button>
+                <button type="button" class="btn-acess" id="btn-modo-leitura" aria-pressed="false">
+                    ¶ Espaçamento Leitura
+                </button>
+                <button type="button" class="btn-acess" id="btn-destacar-links" aria-pressed="false">
+                    ▭ Destacar Botões/Links
+                </button>
+                <button type="button" class="btn-acess" id="btn-ler-pagina" aria-pressed="false">
+                    🔊 Ouvir Resumo
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- =========================================================================
+         CABEÇALHO SEMÂNTICO (<header> + <nav>)
+    ========================================================================== -->
+    <header class="cabecalho-principal">
+        <div class="container cabecalho-inner">
+            <a href="#conteudo-principal" class="marca" aria-label="ConectaCidadão — Página inicial">
+                <div class="marca-icone" aria-hidden="true">CC</div>
+                <div>
+                    <strong style="display: block; font-size: 1.15rem; line-height: 1.1;">ConectaCidadão</strong>
+                    <span style="font-size: 0.78rem; color: var(--cor-ciano); font-weight: 600;">HCI, UX &amp; Direitos Digitais</span>
+                </div>
+            </a>
+
+            <nav aria-label="Navegação principal">
+                <ul class="nav-links">
+                    <li><a href="#secao-comparador">Comparador HCI &amp; UX</a></li>
+                    <li><a href="#secao-direitos">Direitos Digitais</a></li>
+                    <li><a href="#secao-propor">Propor Inclusão</a></li>
+                    <li>
+                        <button type="button" class="btn-ajuda-header" id="btn-abrir-ajuda-header" aria-haspopup="dialog" aria-controls="modal-ajuda">
+                            ? Precisa de Ajuda?
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         CONTEÚDO PRINCIPAL (<main>)
+    ========================================================================== -->
+    <main id="conteudo-principal" tabindex="-1">
+
+        <!-- SEÇÃO HERO -->
+        <section class="hero" aria-labelledby="titulo-hero">
+            <div class="container hero-grid">
+                <div>
+                    <span class="badge-unidade">Projeto Prático • Inclusão Digital &amp; DOM</span>
+                    <h1 id="titulo-hero">
+                        Tecnologia acessível é um <span>Direito Digital</span> de todas as pessoas.
+                    </h1>
+                    <p>
+                        Explore na prática como princípios de Interação Humano-Computador (HCI), Experiência do Usuário (UX) e manipulação dinâmica do DOM transformam páginas comuns em ferramentas de inclusão social.
+                    </p>
+                    <div class="hero-acoes">
+                        <a href="#secao-comparador" class="btn-primario">Testar Comparador HCI/UX</a>
+                        <a href="#secao-direitos" class="btn-secundario">Explorar Direitos Digitais</a>
+                    </div>
+                </div>
+
+                <aside class="card-resumo-ux" aria-labelledby="titulo-pilares">
+                    <h2 id="titulo-pilares">O que você pratica nesta aplicação:</h2>
+                    <ul class="lista-pilares">
+                        <li><span>✓</span> <div><strong>HCI &amp; UX na prática:</strong> Compare barreiras reais de usabilidade com soluções acessíveis (WCAG).</div></li>
+                        <li><span>✓</span> <div><strong>HTML Semântico &amp; ARIA:</strong> Navegação por teclado, foco visível, leitor de voz e alto contraste.</div></li>
+                        <li><span>✓</span> <div><strong>Manipulação do DOM:</strong> Busca instantânea, filtros por tema e criação dinâmica de propostas.</div></li>
+                        <li><span>✓</span> <div><strong>Modal de Ajuda Acessível:</strong> Janela com controle de foco, tecla <code>Esc</code> e guia rápido.</div></li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             OBJETIVO 1: COMPARADOR INTERATIVO DE INTERFACES (HCI, UX E ACESSIBILIDADE)
+        ====================================================================== -->
+        <section id="secao-comparador" class="secao" aria-labelledby="titulo-comparador">
+            <div class="container">
+                <div class="secao-cabecalho">
+                    <h2 id="titulo-comparador">1. Simulador Comparador de Interfaces (HCI &amp; UX)</h2>
+                    <p>
+                        Alterne entre uma interface com barreiras de usabilidade e uma interface projetada com acessibilidade digital para observar a diferença no contraste, na legibilidade, no tamanho dos alvos de clique e no retorno ao usuário.
+                    </p>
+                </div>
+
+                <div class="comparador-controles">
+                    <div>
+                        <strong style="display: block; font-size: 0.95rem;">Selecione o modelo de interface para inspecionar:</strong>
+                        <span id="status-modo-comparador" style="font-size: 0.85rem; color: var(--cor-sucesso);">
+                            Exibindo: Interface Inclusiva (Boas Práticas WCAG)
+                        </span>
+                    </div>
+
+                    <div class="switch-grupo" role="group" aria-label="Alternar modelo de interface simulada">
+                        <button type="button" class="btn-modo-ui" id="btn-ver-ruim" aria-pressed="false">
+                            ✕ Interface Inacessível (Antes)
+                        </button>
+                        <button type="button" class="btn-modo-ui ativo-bom" id="btn-ver-boa" aria-pressed="true">
+                            ✓ Interface Inclusiva (Depois)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="comparador-layout">
+                    <!-- Palco onde a interface muda dinamicamente via DOM -->
+                    <div id="palco-simulacao" class="palco-simulacao interface-boa" aria-live="polite">
+                        <h3 class="sim-titulo">Solicitação de Passe Livre Digital</h3>
+                        <p style="margin-bottom: 1rem;">
+                            Preencha seu CPF abaixo para consultar o benefício de transporte acessível.
+                        </p>
+
+                        <form id="form-simulado" novalidate>
+                            <label id="sim-label-cpf" for="sim-input-cpf">Número do CPF (apenas números):</label>
+                            <input
+                                type="text"
+                                id="sim-input-cpf"
+                                class="sim-input"
+                                placeholder="Ex.: 123.456.789-00"
+                                aria-describedby="sim-ajuda-cpf"
+                            >
+                            <p id="sim-ajuda-cpf" style="font-size: 0.85rem; color: var(--texto-secundario); margin-bottom: 1rem;">
+                                Seus dados são protegidos pela Lei Geral de Proteção de Dados (LGPD).
+                            </p>
+
+                            <button type="submit" id="sim-btn-enviar" class="sim-btn">
+                                Consultar Benefício
+                            </button>
+                        </form>
+
+                        <p id="sim-feedback" style="margin-top: 1rem; font-weight: 700;" aria-live="polite"></p>
+                    </div>
+
+                    <!-- Painel de Diagnóstico HCI / UX atualizado pelo JavaScript -->
+                    <aside class="diagnostico-ux" aria-labelledby="titulo-diagnostico">
+                        <h3 id="titulo-diagnostico" style="font-size: 1.1rem; font-weight: 800;">
+                            Análise de HCI &amp; Acessibilidade
+                        </h3>
+                        <ul id="lista-diagnostico" class="diagnostico-lista">
+                            <!-- Preenchido dinamicamente via JavaScript -->
+                        </ul>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             OBJETIVO 3: LABORATÓRIO DE DIREITOS DIGITAIS & MANIPULAÇÃO DO DOM
+        ====================================================================== -->
+        <section id="secao-direitos" class="secao" aria-labelledby="titulo-direitos">
+            <div class="container">
+                <div class="secao-cabecalho">
+                    <h2 id="titulo-direitos">2. Direitos Digitais e Inclusão Social</h2>
+                    <p>
+                        Pesquise por palavra-chave ou filtre por tema para conhecer garantias fundamentais no ambiente digital. Cada cartão pode ser ouvido em voz alta ou apoiado pela comunidade.
+                    </p>
+                </div>
+
+                <!-- Barra de Busca e Filtros -->
+                <div class="ferramentas-direitos">
+                    <div class="campo-busca-wrap">
+                        <label for="input-busca-direitos" class="sr-only">Buscar direito digital ou tema</label>
+                        <input
+                            type="search"
+                            id="input-busca-direitos"
+                            class="campo-busca"
+                            placeholder="Buscar por LGPD, internet, acessibilidade, dados..."
+                        >
+                    </div>
+
+                    <div class="filtros-categoria" role="group" aria-label="Filtrar direitos digitais por categoria">
+                        <button type="button" class="btn-cat ativo" data-categoria="todas">Todas</button>
+                        <button type="button" class="btn-cat" data-categoria="Privacidade & LGPD">Privacidade &amp; LGPD</button>
+                        <button type="button" class="btn-cat" data-categoria="Acesso à Internet">Acesso à Internet</button>
+                        <button type="button" class="btn-cat" data-categoria="Acessibilidade na Web">Acessibilidade na Web</button>
+                        <button type="button" class="btn-cat" data-categoria="Combate à Desinformação">Combate à Desinformação</button>
+                    </div>
+                </div>
+
+                <p id="contador-resultados" class="status-resultados" aria-live="polite">
+                    Exibindo 6 direitos e iniciativas digitais.
+                </p>
+
+                <!-- Container onde os cards são renderizados dinamicamente com document.createElement -->
+                <div id="grade-direitos" class="grade-cards"></div>
+
+                <!-- Formulário para criar novos cards dinamicamente no DOM -->
+                <div id="secao-propor" class="box-formulario">
+                    <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--cor-ambar);">
+                        + Propor Nova Solução de Inclusão Digital
+                    </h3>
+                    <p style="color: var(--texto-secundario); font-size: 0.92rem; margin-top: 0.25rem;">
+                        Tem uma ideia para tornar a tecnologia mais justa na sua escola ou bairro? Adicione sua proposta diretamente na lista acima usando manipulação do DOM.
+                    </p>
+
+                    <form id="form-nova-proposta" class="form-grid" novalidate>
+                        <div class="campo-grupo">
+                            <label for="proposta-titulo">Título da proposta *</label>
+                            <input type="text" id="proposta-titulo" required placeholder="Ex.: Oficina de celular para idosos">
+                        </div>
+
+                        <div class="campo-grupo">
+                            <label for="proposta-categoria">Categoria *</label>
+                            <select id="proposta-categoria" required>
+                                <option value="Acessibilidade na Web">Acessibilidade na Web</option>
+                                <option value="Acesso à Internet">Acesso à Internet</option>
+                                <option value="Privacidade & LGPD">Privacidade &amp; LGPD</option>
+                                <option value="Combate à Desinformação">Combate à Desinformação</option>
+                            </select>
+                        </div>
+
+                        <div class="campo-grupo largura-total">
+                            <label for="proposta-descricao">Como essa solução ajuda as pessoas? *</label>
+                            <textarea id="proposta-descricao" rows="3" required placeholder="Descreva o impacto social e quem será beneficiado..."></textarea>
+                        </div>
+
+                        <div class="campo-grupo largura-total" style="flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                            <button type="submit" class="btn-primario">
+                                Publicar Proposta na Página
+                            </button>
+                            <span id="feedback-proposta" class="feedback-form" role="status" aria-live="polite"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =========================================================================
+         BOTÃO FLUTUANTE DE AJUDA (Abre o Modal de Ajuda Acessível)
+    ========================================================================== -->
+    <button
+        type="button"
+        class="btn-ajuda-flutuante"
+        id="btn-abrir-ajuda-flutuante"
+        aria-haspopup="dialog"
+        aria-controls="modal-ajuda"
+    >
+        <span aria-hidden="true">?</span> Ajuda &amp; Atalhos
+    </button>
+
+    <!-- =========================================================================
+         OBJETIVO 4: MODAL DE AJUDA ACESSÍVEL
+         Possui role="dialog", aria-modal="true", trap de foco via JS, fechamento
+         por Escape ou clique fora e abas interativas.
+    ========================================================================== -->
+    <div id="modal-ajuda" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-ajuda" aria-hidden="true">
+        <div class="modal-caixa">
+            <div class="modal-topo">
+                <div>
+                    <span style="font-size: 0.78rem; font-weight: 800; color: var(--cor-ciano); text-transform: uppercase;">Central de Suporte</span>
+                    <h2 id="titulo-modal-ajuda" style="font-size: 1.35rem; font-weight: 800; margin-top: 0.15rem;">
+                        Guia de Ajuda e Acessibilidade
+                    </h2>
+                </div>
+                <button type="button" class="btn-fechar-modal" id="btn-fechar-modal" aria-label="Fechar janela de ajuda">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Abas internas do Modal -->
+            <div class="modal-abas" role="tablist" aria-label="Seções de ajuda">
+                <button type="button" class="btn-aba-modal" role="tab" id="tab-guia" aria-selected="true" aria-controls="painel-guia">
+                    Como usar o site
+                </button>
+                <button type="button" class="btn-aba-modal" role="tab" id="tab-atalhos" aria-selected="false" aria-controls="painel-atalhos">
+                    Atalhos de Teclado
+                </button>
+                <button type="button" class="btn-aba-modal" role="tab" id="tab-assistente" aria-selected="false" aria-controls="painel-assistente">
+                    Diagnóstico Rápido
+                </button>
+            </div>
+
+            <!-- Painel 1: Guia Rápido -->
+            <div id="painel-guia" class="painel-aba ativo" role="tabpanel" aria-labelledby="tab-guia">
+                <p style="color: var(--texto-secundario); margin-bottom: 0.85rem;">
+                    Esta aplicação foi construída para demonstrar como tornar páginas web utilizáveis por todas as pessoas:
+                </p>
+                <ul class="lista-pilares">
+                    <li><span>1.</span> <div><strong>Barra Superior:</strong> Use <code>A+</code> e <code>A-</code> para ajustar o texto, ative o <strong>Alto Contraste</strong> ou clique em <strong>Ouvir Resumo</strong> para leitura em voz alta.</div></li>
+                    <li><span>2.</span> <div><strong>Comparador HCI &amp; UX:</strong> Alterne entre <em>Antes</em> e <em>Depois</em> para visualizar erros comuns de design e como corrigi-los.</div></li>
+                    <li><span>3.</span> <div><strong>Direitos Digitais:</strong> Filtre os temas, ouça cada cartão individualmente ou cadastre sua própria proposta de inclusão.</div></li>
+                </ul>
+            </div>
+
+            <!-- Painel 2: Atalhos de Teclado -->
+            <div id="painel-atalhos" class="painel-aba" role="tabpanel" aria-labelledby="tab-atalhos">
+                <p style="color: var(--texto-secundario);">
+                    Você pode navegar por toda a aplicação sem precisar usar o mouse:
+                </p>
+                <ul class="lista-atalhos">
+                    <li><span>Avançar entre botões e campos</span> <kbd>Tab</kbd></li>
+                    <li><span>Voltar ao elemento anterior</span> <kbd>Shift + Tab</kbd></li>
+                    <li><span>Ativar botão ou link selecionado</span> <kbd>Enter</kbd> ou <kbd>Espaço</kbd></li>
+                    <li><span>Abrir esta janela de ajuda</span> <kbd>Alt + H</kbd></li>
+                    <li><span>Fechar esta janela de ajuda</span> <kbd>Esc</kbd></li>
+                </ul>
+            </div>
+
+            <!-- Painel 3: Assistente Interativo de Preferências -->
+            <div id="painel-assistente" class="painel-aba" role="tabpanel" aria-labelledby="tab-assistente">
+                <p style="color: var(--texto-secundario); margin-bottom: 0.85rem;">
+                    Escolha seu perfil de leitura para aplicar automaticamente uma combinação recomendada de acessibilidade:
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+                    <button type="button" class="btn-acess" id="preset-baixa-visao">
+                        👁️ Perfil Baixa Visão (Fonte Grande + Alto Contraste)
+                    </button>
+                    <button type="button" class="btn-acess" id="preset-dislexia">
+                        📖 Perfil Dislexia (Fonte Atkinson + Espaçamento)
+                    </button>
+                    <button type="button" class="btn-acess" id="preset-padrao">
+                        ↺ Restaurar Configuração Padrão
+                    </button>
+                </div>
+                <p id="feedback-preset" style="margin-top: 0.85rem; color: var(--cor-sucesso); font-weight: 700; font-size: 0.9rem;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         RODAPÉ SEMÂNTICO (<footer>)
+    ========================================================================== -->
+    <footer class="rodape">
+        <div class="container">
+            <p>
+                <strong>ConectaCidadão</strong> — Projeto desenvolvido com HTML Semântico, CSS Acessível e JavaScript (Manipulação do DOM).
+            </p>
+            <p style="margin-top: 0.35rem; font-size: 0.82rem;">
+                Princípios de HCI, UX, Inclusão Digital e Direitos Digitais na Web.
+            </p>
+        </div>
+    </footer>
+
+    <!-- =========================================================================
+         JAVASCRIPT PURO — MANIPULAÇÃO DO DOM, ACESSIBILIDADE, SÍNTESE DE VOZ E MODAL
+    ========================================================================== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            /* -----------------------------------------------------------------
+               UTILITÁRIO: ANÚNCIOS PARA LEITORES DE TELA (ARIA-LIVE)
+            ------------------------------------------------------------------ */
+            const anunciadorAria = document.getElementById('anunciador-aria');
+            function anunciarParaLeitor(mensagem) {
+                anunciadorAria.textContent = '';
+                setTimeout(() => {
+                    anunciadorAria.textContent = mensagem;
+                }, 40);
+            }
+
+            /* -----------------------------------------------------------------
+               1. BARRA DE ACESSIBILIDADE (CONTROLES DINÂMICOS NO DOM)
+            ------------------------------------------------------------------ */
+            let escalaAtual = 100;
+            const btnDiminuir = document.getElementById('btn-diminuir-fonte');
+            const btnResetar = document.getElementById('btn-resetar-fonte');
+            const btnAumentar = document.getElementById('btn-aumentar-fonte');
+            const btnAltoContraste = document.getElementById('btn-alto-contraste');
+            const btnModoLeitura = document.getElementById('btn-modo-leitura');
+            const btnDestacarLinks = document.getElementById('btn-destacar-links');
+            const btnLerPagina = document.getElementById('btn-ler-pagina');
+
+            function atualizarEscalaFonte(novaEscala) {
+                escalaAtual = Math.min(130, Math.max(85, novaEscala));
+                document.documentElement.style.setProperty('--escala-fonte', escalaAtual + '%');
+                btnResetar.textContent = `A (${escalaAtual}%)`;
+                anunciarParaLeitor(`Tamanho da fonte ajustado para ${escalaAtual} por cento.`);
+            }
+
+            btnAumentar.addEventListener('click', () => atualizarEscalaFonte(escalaAtual + 10));
+            btnDiminuir.addEventListener('click', () => atualizarEscalaFonte(escalaAtual - 10));
+            btnResetar.addEventListener('click', () => atualizarEscalaFonte(100));
+
+            function alternarModoCorporal(botao, classeCss, nomeModo) {
+                const ativo = document.body.classList.toggle(classeCss);
+                botao.setAttribute('aria-pressed', String(ativo));
+                anunciarParaLeitor(`${nomeModo} ${ativo ? 'ativado' : 'desativado'}.`);
+            }
+
+            btnAltoContraste.addEventListener('click', () => {
+                alternarModoCorporal(btnAltoContraste, 'modo-alto-contraste', 'Modo de alto contraste');
+            });
+
+            btnModoLeitura.addEventListener('click', () => {
+                alternarModoCorporal(btnModoLeitura, 'modo-leitura', 'Espaçamento ampliado para leitura');
+            });
+
+            btnDestacarLinks.addEventListener('click', () => {
+                alternarModoCorporal(btnDestacarLinks, 'destacar-interativos', 'Destaque de botões e links');
+            });
+
+            /* Leitor de Texto em Voz Alta (Web Speech API - speechSynthesis) */
+            function falarTexto(texto, botaoAcionado = null) {
+                if (!('speechSynthesis' in window)) {
+                    anunciarParaLeitor('Seu navegador não suporta leitura em voz alta.');
+                    return;
+                }
+
+                // Se já estiver falando, interrompe
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    if (botaoAcionado) botaoAcionado.setAttribute('aria-pressed', 'false');
+                    return;
+                }
+
+                const fala = new SpeechSynthesisUtterance(texto);
+                fala.lang = 'pt-BR';
+                fala.rate = 1.0;
+
+                fala.onstart = () => {
+                    if (botaoAcionado) botaoAcionado.setAttribute('aria-pressed', 'true');
+                };
+                fala.onend = () => {
+                    if (botaoAcionado) botaoAcionado.setAttribute('aria-pressed', 'false');
+                };
+
+                window.speechSynthesis.speak(fala);
+            }
+
+            btnLerPagina.addEventListener('click', () => {
+                const resumo = 'Bem-vindo ao ConectaCidadão. Nesta página você pode testar o comparador de interfaces acessíveis, explorar seus direitos digitais e propor novas ideias de inclusão social.';
+                falarTexto(resumo, btnLerPagina);
+            });
+
+            /* -----------------------------------------------------------------
+               2. SIMULADOR COMPARADOR DE INTERFACES (HCI & UX)
+            ------------------------------------------------------------------ */
+            const btnVerRuim = document.getElementById('btn-ver-ruim');
+            const btnVerBoa = document.getElementById('btn-ver-boa');
+            const palcoSimulacao = document.getElementById('palco-simulacao');
+            const statusModoComparador = document.getElementById('status-modo-comparador');
+            const listaDiagnostico = document.getElementById('lista-diagnostico');
+            const simLabelCpf = document.getElementById('sim-label-cpf');
+            const simInputCpf = document.getElementById('sim-input-cpf');
+            const simAjudaCpf = document.getElementById('sim-ajuda-cpf');
+            const simBtnEnviar = document.getElementById('sim-btn-enviar');
+            const formSimulado = document.getElementById('form-simulado');
+            const simFeedback = document.getElementById('sim-feedback');
+
+            const itensDiagnosticoRuim = [
+                '<strong>Contraste insuficiente (1.4:1):</strong> Texto cinza claro sobre fundo cinza impede a leitura por pessoas com baixa visão ou sob luz solar.',
+                '<strong>Ausência de rótulo (&lt;label&gt;):</strong> O campo usa apenas placeholder, dificultando o uso por leitores de tela.',
+                '<strong>Alvo de clique minúsculo:</strong> Botão menor que 24px prejudica pessoas com dificuldades motoras ou em telas de celular.',
+                '<strong>Sem feedback claro:</strong> Ao clicar, o usuário não recebe confirmação nem orientação de erro.'
+            ];
+
+            const itensDiagnosticoBom = [
+                '<strong>Alto contraste (WCAG AAA):</strong> Texto claro sobre fundo escuro garante legibilidade imediata.',
+                '<strong>Rótulo explícito e semântico:</strong> Uso correto de <code>&lt;label for="..."&gt;</code> e <code>aria-describedby</code>.',
+                '<strong>Área de toque acessível (46px):</strong> Facilita o clique preciso com mouse, teclado ou toque na tela.',
+                '<strong>Feedback claro e imediato:</strong> Mensagens de confirmação e validação anunciadas via <code>aria-live</code>.'
+            ];
+
+            function renderizarDiagnostico(itens, classeTipo) {
+                listaDiagnostico.innerHTML = '';
+                itens.forEach(textoHtml => {
+                    const li = document.createElement('li');
+                    li.className = classeTipo;
+                    li.innerHTML = textoHtml;
+                    listaDiagnostico.appendChild(li);
+                });
+            }
+
+            function ativarInterfaceRuim() {
+                palcoSimulacao.classList.remove('interface-boa');
+                palcoSimulacao.classList.add('interface-ruim');
+                btnVerRuim.classList.add('ativo-ruim');
+                btnVerRuim.setAttribute('aria-pressed', 'true');
+                btnVerBoa.classList.remove('ativo-bom');
+                btnVerBoa.setAttribute('aria-pressed', 'false');
+
+                statusModoComparador.textContent = 'Exibindo: Interface Inacessível (Barreiras de HCI & UX)';
+                statusModoComparador.style.color = 'var(--cor-erro)';
+
+                // Simula remoção visual do rótulo e botão genérico
+                simLabelCpf.style.display = 'none';
+                simInputCpf.placeholder = 'cpf';
+                simAjudaCpf.style.display = 'none';
+                simBtnEnviar.textContent = 'ok';
+                simFeedback.textContent = '';
+
+                renderizarDiagnostico(itensDiagnosticoRuim, 'alerta-erro');
+                anunciarParaLeitor('Simulador alterado para Interface Inacessível.');
+            }
+
+            function ativarInterfaceBoa() {
+                palcoSimulacao.classList.remove('interface-ruim');
+                palcoSimulacao.classList.add('interface-boa');
+                btnVerBoa.classList.add('ativo-bom');
+                btnVerBoa.setAttribute('aria-pressed', 'true');
+                btnVerRuim.classList.remove('ativo-ruim');
+                btnVerRuim.setAttribute('aria-pressed', 'false');
+
+                statusModoComparador.textContent = 'Exibindo: Interface Inclusiva (Boas Práticas WCAG)';
+                statusModoComparador.style.color = 'var(--cor-sucesso)';
+
+                simLabelCpf.style.display = 'block';
+                simInputCpf.placeholder = 'Ex.: 123.456.789-00';
+                simAjudaCpf.style.display = 'block';
+                simBtnEnviar.textContent = 'Consultar Benefício';
+                simFeedback.textContent = '';
+
+                renderizarDiagnostico(itensDiagnosticoBom, 'alerta-ok');
+                anunciarParaLeitor('Simulador alterado para Interface Inclusiva.');
+            }
+
+            btnVerRuim.addEventListener('click', ativarInterfaceRuim);
+            btnVerBoa.addEventListener('click', ativarInterfaceBoa);
+
+            formSimulado.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const modoRuim = palcoSimulacao.classList.contains('interface-ruim');
+                const valor = simInputCpf.value.trim();
+
+                if (modoRuim) {
+                    simFeedback.style.color = '#9ca3af';
+                    simFeedback.textContent = 'err 402';
+                    return;
+                }
+
+                if (valor.length < 11) {
+                    simFeedback.style.color = 'var(--cor-erro)';
+                    simFeedback.textContent = 'Aviso: Digite os 11 dígitos do seu CPF para realizar a consulta.';
+                    simInputCpf.focus();
+                } else {
+                    simFeedback.style.color = 'var(--cor-sucesso)';
+                    simFeedback.textContent = '✓ Consulta realizada com sucesso! Seu cadastro está ativo e protegido.';
+                }
+            });
+
+            // Inicializa o comparador no modo acessível
+            ativarInterfaceBoa();
+
+            /* -----------------------------------------------------------------
+               3. LABORATÓRIO DE DIREITOS DIGITAIS (MANIPULAÇÃO DINÂMICA DO DOM)
+            ------------------------------------------------------------------ */
+            const direitosDigitais = [
+                {
+                    id: 1,
+                    titulo: 'Proteção de Dados Pessoais (LGPD)',
+                    categoria: 'Privacidade & LGPD',
+                    descricao: 'Todo cidadão tem o direito de saber como seus dados são coletados, usados e armazenados, podendo pedir correção ou exclusão a qualquer momento.',
+                    apoiadores: 42,
+                    apoiado: false,
+                    comunidade: false
+                },
+                {
+                    id: 2,
+                    titulo: 'Acessibilidade em Sites e Serviços Públicos',
+                    categoria: 'Acessibilidade na Web',
+                    descricao: 'Pela Lei Brasileira de Inclusão (LBI), portais governamentais e serviços essenciais devem ser acessíveis a pessoas com deficiência visual, auditiva ou motora.',
+                    apoiadores: 58,
+                    apoiado: false,
+                    comunidade: false
+                },
+                {
+                    id: 3,
+                    titulo: 'Internet como Direito à Educação e Cidadania',
+                    categoria: 'Acesso à Internet',
+                    descricao: 'O Marco Civil da Internet reconhece o acesso à rede como essencial ao exercício da cidadania, garantindo neutralidade e liberdade de expressão.',
+                    apoiadores: 37,
+                    apoiado: false,
+                    comunidade: false
+                },
+                {
+                    id: 4,
+                    titulo: 'Checagem de Fatos e Combate às Fake News',
+                    categoria: 'Combate à Desinformação',
+                    descricao: 'Educação midiática ajuda estudantes e famílias a identificar notícias falsas, golpes digitais e manipulações antes de compartilhar.',
+                    apoiadores: 31,
+                    apoiado: false,
+                    comunidade: false
+                },
+                {
+                    id: 5,
+                    titulo: 'Legendas e Audiodescrição em Conteúdos Digitais',
+                    categoria: 'Acessibilidade na Web',
+                    descricao: 'Vídeos educativos e redes sociais devem oferecer legendas sincronizadas e descrição de imagens (texto alternativo) para inclusão plena.',
+                    apoiadores: 49,
+                    apoiado: false,
+                    comunidade: false
+                },
+                {
+                    id: 6,
+                    titulo: 'Pontos Comunitários de Wi-Fi e Inclusão Digital',
+                    categoria: 'Acesso à Internet',
+                    descricao: 'Telecentros, bibliotecas e praças conectadas reduzem a desigualdade digital para quem não possui banda larga em casa.',
+                    apoiadores: 29,
+                    apoiado: false,
+                    comunidade: false
+                }
+            ];
+
+            let categoriaSelecionada = 'todas';
+            let termoBusca = '';
+
+            const gradeDireitos = document.getElementById('grade-direitos');
+            const inputBusca = document.getElementById('input-busca-direitos');
+            const botoesCategoria = document.querySelectorAll('.btn-cat');
+            const contadorResultados = document.getElementById('contador-resultados');
+
+            function renderizarCardsDireitos() {
+                gradeDireitos.innerHTML = '';
+
+                const filtrados = direitosDigitais.filter(item => {
+                    const bateCategoria = categoriaSelecionada === 'todas' || item.categoria === categoriaSelecionada;
+                    const textoCompleto = `${item.titulo} ${item.descricao} ${item.categoria}`.toLowerCase();
+                    const bateBusca = textoCompleto.includes(termoBusca.toLowerCase());
+                    return bateCategoria && bateBusca;
+                });
+
+                contadorResultados.textContent = filtrados.length === 1
+                    ? 'Exibindo 1 iniciativa de direito digital.'
+                    : `Exibindo ${filtrados.length} direitos e iniciativas digitais.`;
+
+                if (filtrados.length === 0) {
+                    const avisoVazio = document.createElement('p');
+                    avisoVazio.style.gridColumn = '1 / -1';
+                    avisoVazio.style.color = 'var(--texto-secundario)';
+                    avisoVazio.textContent = 'Nenhum item encontrado para essa busca. Tente outra palavra-chave ou limpe o filtro.';
+                    gradeDireitos.appendChild(avisoVazio);
+                    return;
+                }
+
+                filtrados.forEach(item => {
+                    const article = document.createElement('article');
+                    article.className = 'card-direito';
+
+                    const topo = document.createElement('div');
+
+                    const badge = document.createElement('span');
+                    badge.className = item.comunidade ? 'tag-categoria tag-comunidade' : 'tag-categoria';
+                    badge.textContent = item.comunidade ? `★ Proposta • ${item.categoria}` : item.categoria;
+
+                    const h3 = document.createElement('h3');
+                    h3.textContent = item.titulo;
+
+                    const p = document.createElement('p');
+                    p.textContent = item.descricao;
+
+                    topo.appendChild(badge);
+                    topo.appendChild(h3);
+                    topo.appendChild(p);
+
+                    const rodape = document.createElement('div');
+                    rodape.className = 'card-rodape';
+
+                    const btnApoiar = document.createElement('button');
+                    btnApoiar.type = 'button';
+                    btnApoiar.className = 'btn-apoiar';
+                    btnApoiar.setAttribute('aria-pressed', String(item.apoiado));
+                    btnApoiar.textContent = `${item.apoiado ? '★ Apoiado' : '☆ Apoiar'} (${item.apoiadores})`;
+                    btnApoiar.addEventListener('click', () => {
+                        item.apoiado = !item.apoiado;
+                        item.apoiadores += item.apoiado ? 1 : -1;
+                        renderizarCardsDireitos();
+                        anunciarParaLeitor(`${item.apoiado ? 'Apoio registrado' : 'Apoio removido'} para ${item.titulo}. Total de ${item.apoiadores} apoios.`);
+                    });
+
+                    const btnOuvir = document.createElement('button');
+                    btnOuvir.type = 'button';
+                    btnOuvir.className = 'btn-ouvir-card';
+                    btnOuvir.setAttribute('aria-label', `Ouvir descrição de ${item.titulo}`);
+                    btnOuvir.textContent = '🔊 Ouvir';
+                    btnOuvir.addEventListener('click', () => {
+                        falarTexto(`${item.titulo}. ${item.descricao}`, btnOuvir);
+                    });
+
+                    rodape.appendChild(btnApoiar);
+                    rodape.appendChild(btnOuvir);
+
+                    article.appendChild(topo);
+                    article.appendChild(rodape);
+                    gradeDireitos.appendChild(article);
+                });
+            }
+
+            inputBusca.addEventListener('input', (e) => {
+                termoBusca = e.target.value;
+                renderizarCardsDireitos();
+            });
+
+            botoesCategoria.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    botoesCategoria.forEach(b => b.classList.remove('ativo'));
+                    btn.classList.add('ativo');
+                    categoriaSelecionada = btn.getAttribute('data-categoria');
+                    renderizarCardsDireitos();
+                });
+            });
+
+            /* Criação Dinâmica de Nova Proposta via Formulário */
+            const formNovaProposta = document.getElementById('form-nova-proposta');
+            const feedbackProposta = document.getElementById('feedback-proposta');
+
+            formNovaProposta.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const tituloInput = document.getElementById('proposta-titulo');
+                const categoriaInput = document.getElementById('proposta-categoria');
+                const descricaoInput = document.getElementById('proposta-descricao');
+
+                const titulo = tituloInput.value.trim();
+                const categoria = categoriaInput.value;
+                const descricao = descricaoInput.value.trim();
+
+                if (!titulo || !descricao) {
+                    feedbackProposta.style.color = 'var(--cor-erro)';
+                    feedbackProposta.textContent = 'Por favor, preencha o título e a descrição da proposta.';
+                    if (!titulo) tituloInput.focus();
+                    else descricaoInput.focus();
+                    return;
+                }
+
+                direitosDigitais.unshift({
+                    id: Date.now(),
+                    titulo,
+                    categoria,
+                    descricao,
+                    apoiadores: 1,
+                    apoiado: true,
+                    comunidade: true
+                });
+
+                // Reseta filtro para mostrar o novo card imediatamente
+                categoriaSelecionada = 'todas';
+                termoBusca = '';
+                inputBusca.value = '';
+                botoesCategoria.forEach(b => b.classList.toggle('ativo', b.getAttribute('data-categoria') === 'todas'));
+
+                renderizarCardsDireitos();
+                formNovaProposta.reset();
+
+                feedbackProposta.style.color = 'var(--cor-sucesso)';
+                feedbackProposta.textContent = '✓ Sua proposta foi adicionada ao painel de Direitos Digitais!';
+                anunciarParaLeitor(`Nova proposta publicada: ${titulo}.`);
+            });
+
+            renderizarCardsDireitos();
+
+            /* -----------------------------------------------------------------
+               4. MODAL DE AJUDA ACESSÍVEL (TRAP DE FOCO, ESC, ABAS E PRESETS)
+            ------------------------------------------------------------------ */
+            const modalAjuda = document.getElementById('modal-ajuda');
+            const btnAbrirHeader = document.getElementById('btn-abrir-ajuda-header');
+            const btnAbrirFlutuante = document.getElementById('btn-abrir-ajuda-flutuante');
+            const btnFecharModal = document.getElementById('btn-fechar-modal');
+            let ultimoElementoFocado = null;
+
+            function abrirModalAjuda() {
+                ultimoElementoFocado = document.activeElement;
+                modalAjuda.classList.add('aberto');
+                modalAjuda.setAttribute('aria-hidden', 'false');
+                btnFecharModal.focus();
+                anunciarParaLeitor('Janela de ajuda aberta. Pressione Escape para fechar.');
+            }
+
+            function fecharModalAjuda() {
+                modalAjuda.classList.remove('aberto');
+                modalAjuda.setAttribute('aria-hidden', 'true');
+                if (ultimoElementoFocado) {
+                    ultimoElementoFocado.focus();
+                }
+                anunciarParaLeitor('Janela de ajuda fechada.');
+            }
+
+            btnAbrirHeader.addEventListener('click', abrirModalAjuda);
+            btnAbrirFlutuante.addEventListener('click', abrirModalAjuda);
+            btnFecharModal.addEventListener('click', fecharModalAjuda);
+
+            // Fechar ao clicar fora da caixa do modal
+            modalAjuda.addEventListener('click', (e) => {
+                if (e.target === modalAjuda) {
+                    fecharModalAjuda();
+                }
+            });
+
+            // Atalho global Alt + H para abrir e Esc para fechar + Trap de Foco (Tab)
+            document.addEventListener('keydown', (e) => {
+                if (e.altKey && e.key.toLowerCase() === 'h') {
+                    e.preventDefault();
+                    if (modalAjuda.classList.contains('aberto')) fecharModalAjuda();
+                    else abrirModalAjuda();
+                }
+
+                if (e.key === 'Escape' && modalAjuda.classList.contains('aberto')) {
+                    fecharModalAjuda();
+                }
+
+                // Mantém o foco preso dentro do modal enquanto estiver aberto
+                if (e.key === 'Tab' && modalAjuda.classList.contains('aberto')) {
+                    const focaveis = modalAjuda.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    const primeiro = focaveis[0];
+                    const ultimo = focaveis[focaveis.length - 1];
+
+                    if (e.shiftKey && document.activeElement === primeiro) {
+                        e.preventDefault();
+                        ultimo.focus();
+                    } else if (!e.shiftKey && document.activeElement === ultimo) {
+                        e.preventDefault();
+                        primeiro.focus();
+                    }
+                }
+            });
+
+            // Navegação entre abas internas do Modal de Ajuda
+            const abasModal = document.querySelectorAll('.btn-aba-modal');
+            const paineisModal = document.querySelectorAll('.painel-aba');
+
+            abasModal.forEach(aba => {
+                aba.addEventListener('click', () => {
+                    abasModal.forEach(a => a.setAttribute('aria-selected', 'false'));
+                    paineisModal.forEach(p => p.classList.remove('ativo'));
+
+                    aba.setAttribute('aria-selected', 'true');
+                    const painelAlvo = document.getElementById(aba.getAttribute('aria-controls'));
+                    if (painelAlvo) painelAlvo.classList.add('ativo');
+                });
+            });
+
+            // Perfis rápidos de acessibilidade dentro do Modal
+            const feedbackPreset = document.getElementById('feedback-preset');
+
+            document.getElementById('preset-baixa-visao').addEventListener('click', () => {
+                atualizarEscalaFonte(120);
+                document.body.classList.add('modo-alto-contraste', 'destacar-interativos');
+                btnAltoContraste.setAttribute('aria-pressed', 'true');
+                btnDestacarLinks.setAttribute('aria-pressed', 'true');
+                feedbackPreset.textContent = '✓ Perfil Baixa Visão aplicado (Fonte 120% + Alto Contraste).';
+            });
+
+            document.getElementById('preset-dislexia').addEventListener('click', () => {
+                atualizarEscalaFonte(110);
+                document.body.classList.add('modo-leitura');
+                btnModoLeitura.setAttribute('aria-pressed', 'true');
+                feedbackPreset.textContent = '✓ Perfil Leitura / Dislexia aplicado (Fonte Atkinson + Espaçamento).';
+            });
+
+            document.getElementById('preset-padrao').addEventListener('click', () => {
+                atualizarEscalaFonte(100);
+                document.body.classList.remove('modo-alto-contraste', 'modo-leitura', 'destacar-interativos');
+                btnAltoContraste.setAttribute('aria-pressed', 'false');
+                btnModoLeitura.setAttribute('aria-pressed', 'false');
+                btnDestacarLinks.setAttribute('aria-pressed', 'false');
+                feedbackPreset.textContent = '✓ Configurações visuais restauradas para o padrão.';
+            });
+        });
+    </script>
+</body>
+</html>
